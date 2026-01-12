@@ -15,7 +15,7 @@ export async function UserRegister(req,res){
         });
         await user.save();
 
-        const token=jwt.sign({userId:user._id},process.env.jwt_secret,{expiresIn:'1h'});
+        const token=jwt.sign({userId:user._id,role:user.role},process.env.JWT_SECRET || process.env.jwt_secret,{expiresIn:'1h'});
         res.status(201).json({message:"User registered successfully",token});
     }catch(error){
         res.status(500).json({message:"Error registering user",error});
@@ -23,17 +23,21 @@ export async function UserRegister(req,res){
 }
 
 export async function UserLogin(req,res){
-    const {username,password}=req.body;
+    const {username,password,role}=req.body;
     try{
         const user=await User.findOne({username});
         if(!user){
             return  res.status(400).json({message:"Invalid credentials"});
         }
         const isMatch=await bcrypt.compare(password,user.password);
+        const isrole=(role===user.role);
+        if(!isrole){
+            return res.status(400).json({message:"Invalid credentials"});
+        }
         if(!isMatch){
             return res.status(400).json({message:"Invalid credentials"});
         }
-        const token=jwt.sign({userId:user._id},process.env.jwt_secret,{expiresIn:'1h'});
+        const token=jwt.sign({userId:user._id,role:user.role},process.env.JWT_SECRET || process.env.jwt_secret,{expiresIn:'1h'});
         res.status(200).json({message:"Login successful",token});
     }catch(error){
         res.status(500).json({message:"Error logging in",error});
